@@ -1,9 +1,9 @@
 from sklearn.ensemble import GradientBoostingClassifier
 
 
-def generate_clf(learning_rate=0.05,
+def generate_clf(learning_rate=0.15,
                  n_estimators=300,
-                 max_depth=7,
+                 max_depth=9,
                  subsample=0.65,
                  max_features='sqrt',
                  verbose=1):
