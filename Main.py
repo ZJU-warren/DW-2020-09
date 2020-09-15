@@ -1,19 +1,23 @@
 import sys;sys.path.append('../')
 from Model import GBDT
-# from Model import XGBoost
+from Model import XGBoost
+from Model import LightGBM
 import pandas as pd
 from Model.ModelProxy import ModelProxy
 from sklearn.metrics import f1_score, roc_curve, auc
 import DataLinkSet as DLSet
 import datetime
 from sklearn.decomposition import PCA
+from sklearn.preprocessing import StandardScaler
 
 
 def get_clf(choice):
     if choice == 'GBDT':
-        return GBDT.generate_clf(learning_rate=0.15, n_estimators=200, subsample=0.7)
-    # elif choice == 'XGBoost':
-    #    return XGBoost.generate_clf()
+        return GBDT.generate_clf()
+    elif choice == 'XGBoost':
+        return XGBoost.generate_clf()
+    elif choice == 'LightGBM':
+        return LightGBM.generate_clf()
 
 
 def main():
@@ -23,24 +27,26 @@ def main():
     # confirm features
     features_used = df_clean_train.columns.difference(['id', 'earliesCreditLine', 'isDefault', 'n2.2', 'n2.3'])
 
-
     # state clf
     model_choice = 'GBDT'
     # model_choice = 'XGBoost'
+    # model_choice = 'LightGBM'
     model = ModelProxy(clf=get_clf(model_choice))
+    pca = PCA(n_components=30)
 
     # training
     train_X = df_clean_train[features_used].values
+    # scaler = StandardScaler().fit(train_X)
+    # train_X = scaler.transform(train_X)
+    # train_X = pca.fit_transform(train_X)
     train_y = df_clean_train['isDefault'].values
 
     # add PCA
-    pca = PCA(n_components=30)
-    # train_X = pca.fit_transform(train_X)
-
     model.fit(train_X, train_y)
-    model.save(DLSet.model_link % (model_choice + '+PCA', datetime.datetime.today()))
+    model.save(DLSet.model_link % (model_choice, datetime.datetime.today()))
 
     # evaluate model
+    # model = ModelProxy(data_link=DLSet.model_link % ('LightGBM', '2020-09-15 11:45:09.713017'))
     pred_y = model.predict(train_X)
     result = f1_score(train_y, pred_y)
     print('total F1 = {}'.format(result))
@@ -51,6 +57,7 @@ def main():
 
     # predicting
     test_X = df_clean_test[features_used].values
+    # test_X = scaler.transform(test_X)
     # test_X = pca.transform(test_X)
 
     pred_y_prob = model.predict_proba(test_X)[:, 1]
